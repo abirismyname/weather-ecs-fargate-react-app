@@ -74,5 +74,4 @@ jobs:
           TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text)
           LOAD_BALANCER_ARN=$(aws elbv2 describe-target-groups  --target-group-arns $TARGET_GROUP_ARN --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)
           APP_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
-          echo "APP_URL: ${APP_URL}"
-          echo "::set-output name=app_url::$APP_URL"
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
