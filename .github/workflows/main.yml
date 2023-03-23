@@ -34,4 +34,4 @@ jobs:
       - name: Post Deploy
         run: | 
           echo APP_URL: ${{ needs.deploy-to-prod.outputs.app_url }}
-          echo APP_IP: ${{ needs.deploy-to-prod.outputs.app_ip }}
+          echo APP_IP:  ${{ needs.deploy-to-prod.outputs.app_ip }}

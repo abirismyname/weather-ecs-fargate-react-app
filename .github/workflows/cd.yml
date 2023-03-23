@@ -60,22 +60,17 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
 
-      - name: Set Task Public IP
+      - name: Set App IP
         id: set_app_ip
         run: |
           TASK_ARN=$(aws ecs list-tasks --cluster ${{ secrets.ECS_CLUSTER }} --service-name ${{ secrets.ECS_SERVICE }} --query 'taskArns[0]' --output text)
-          echo "TASK_ARN: ${TASK_ARN}"
           TASK_DETAILS=$(aws ecs describe-tasks --cluster ${{ secrets.ECS_CLUSTER }} --task "${TASK_ARN}" --query 'tasks[0].attachments[0].details')
           ENI=$(echo $TASK_DETAILS | jq -r '.[] | select(.name=="networkInterfaceId").value')
           PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "${ENI}" --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
           echo "app_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-      - name: GetApp URL
+      - name: Set App URL
         id: set_app_url
         run: |
           TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text)
-          echo "TARGET_GROUP_ARN: ${TARGET_GROUP_ARN}"
           LOAD_BALANCER_ARN=$(aws elbv2 describe-target-groups  --target-group-arns $TARGET_GROUP_ARN --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)
-          echo "LOAD_BALANCER_ARN: ${LOAD_BALANCER_ARN}"
-          APP_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
-          echo "APP_URL: ${APP_URL}"
-          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+          echo "app_url=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)" >> $GITHUB_OUTPUT
