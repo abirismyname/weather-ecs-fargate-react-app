@@ -71,7 +71,7 @@ jobs:
       - name: Get Task Public IP
         id: set_app_url
         run: |
-          TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].aws' --output text) 
+          TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text) 
           LOAD_BALANCER_ARN=$(aws elbv2 describe-target-groups  --target-group-arns $TARGET_GROUP_ARN --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)
           APP_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
           echo "app_ip=${{ env.TASK_PUBLIC_IP }}" >> $GITHUB_OUTPUT
