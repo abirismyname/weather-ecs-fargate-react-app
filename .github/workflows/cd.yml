@@ -21,9 +21,9 @@ name: cd
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    # only execute if PR is merged or manual trigger, or not raised by dependabot
-
+    outputs:
+      app_url: ${{ steps.set_app_url.outputs.app_url }}
+      app_ip: ${{ steps.set_app_ip.outputs.app_ip }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -61,18 +61,18 @@ jobs:
           wait-for-service-stability: true
 
       - name: Set Task Public IP
+        id: set_app_ip
         run: |
           TASK_ARN=$(aws ecs list-tasks --cluster ${{ secrets.ECS_CLUSTER }} --service-name ${{ secrets.ECS_SERVICE }} --query 'taskArns[0]' --output text)
           echo "TASK_ARN: ${TASK_ARN}"
           TASK_DETAILS=$(aws ecs describe-tasks --cluster ${{ secrets.ECS_CLUSTER }} --task "${TASK_ARN}" --query 'tasks[0].attachments[0].details')
           ENI=$(echo $TASK_DETAILS | jq -r '.[] | select(.name=="networkInterfaceId").value')
           PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "${ENI}" --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-          echo "TASK_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-      - name: Get Task Public IP
+          echo "app_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+      - name: GetApp URL
         id: set_app_url
         run: |
           TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text) 
           LOAD_BALANCER_ARN=$(aws elbv2 describe-target-groups  --target-group-arns $TARGET_GROUP_ARN --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)
           APP_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
-          echo "app_ip=${{ env.TASK_PUBLIC_IP }}" >> $GITHUB_OUTPUT
           echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
