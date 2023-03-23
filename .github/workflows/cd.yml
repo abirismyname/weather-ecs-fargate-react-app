@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app_url: ${{ steps.set_app_url.outputs.app_url }}
-      app_ip: ${{ steps.set_app_ip.outputs.app_ip }}
+      app_ip:  ${{ steps.set_app_ip.outputs.app_ip }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -72,7 +72,10 @@ jobs:
       - name: GetApp URL
         id: set_app_url
         run: |
-          TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text) 
+          TARGET_GROUP_ARN=$(aws ecs describe-services --service ${{ secrets.ECS_SERVICE }} --cluster ${{ secrets.ECS_CLUSTER }} --query 'services[0].loadBalancers[0].targetGroupArn' --output text)
+          echo "TARGET_GROUP_ARN: ${TARGET_GROUP_ARN}"
           LOAD_BALANCER_ARN=$(aws elbv2 describe-target-groups  --target-group-arns $TARGET_GROUP_ARN --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)
+          echo "LOAD_BALANCER_ARN: ${LOAD_BALANCER_ARN}"
           APP_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
+          echo "APP_URL: ${APP_URL}"
           echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
