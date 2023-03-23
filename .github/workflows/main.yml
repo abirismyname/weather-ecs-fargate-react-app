@@ -24,3 +24,14 @@ jobs:
     with:
       image-tag: ${{ needs.build-and-test.outputs.image-tag }}
     secrets: inherit
+
+  post-deploy:
+    needs: [build-and-test,deploy-to-prod]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps: 
+      - name: Post Deploy
+        run: | 
+          echo APP_URL: ${{ needs.deploy-to-prod.outputs.app_url }}
+          echo APP_IP: ${{ needs.deploy-to-prod.outputs.app_ip }}

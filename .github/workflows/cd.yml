@@ -9,6 +9,13 @@ on:
       image-tag:
         required: true
         type: string
+    outputs:
+      app_url:
+        description: "The ECS application URL"
+        value: ${{ jobs.deploy.outputs.app_url }}
+      app_ip:
+        description: "The ECS application public ip"
+        value: ${{ jobs.deploy.outputs.app_ip }}
 name: cd
 
 jobs:
@@ -20,20 +27,23 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-#      Auth example
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}        
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+
       - name: Download task definition
         run: |
           aws ecs describe-task-definition \
            --task-definition weather-app-task-definition-family \
            --query taskDefinition > task-definition.json
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -42,11 +52,6 @@ jobs:
           container-name: weather-app
           image: "${{ steps.login-ecr.outputs.registry }}/weather-app:${{ inputs.image-tag }}"
 
-      - name: Echo task definition
-        run: |
-          echo "${{ steps.task-def.outputs.task-definition }}"
-          cat ${{ steps.task-def.outputs.task-definition }}
-
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -54,3 +59,19 @@ jobs:
           service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      - name: Set Task Public IP
+        run: |
+          TASK_ARN=$(aws ecs list-tasks --cluster ${{ secrets.ECS_CLUSTER }} --service-name ${{ secrets.ECS_SERVICE }} --query 'taskArns[0]' --output text)
+          echo "TASK_ARN: ${TASK_ARN}"
+          TASK_DETAILS=$(aws ecs describe-tasks --cluster ${{ secrets.ECS_CLUSTER }} --task "${TASK_ARN}" --query 'tasks[0].attachments[0].details')
+          ENI=$(echo $TASK_DETAILS | jq -r '.[] | select(.name=="networkInterfaceId").value')
+          PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "${ENI}" --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+          echo "TASK_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+      - name: Get Task Public IP
+        id: set_app_url
+        run: |
+          echo "ECS Task Public IP: ${{ env.TASK_PUBLIC_IP }}"
+          APP_URL=$(aws elbv2 describe-load-balancers --names ${{ secrets.ECS_CLUSTER }} --query 'LoadBalancers[0].DNSName' --output text)
+          echo "app_ip=${{ env.TASK_PUBLIC_IP }}" >> $GITHUB_OUTPUT
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
