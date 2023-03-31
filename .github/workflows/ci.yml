@@ -11,7 +11,7 @@ jobs:
 
   build-and-test:
     runs-on: ubuntu-latest
-
+    environment: ${{ github.ref_name }}
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
     steps:
