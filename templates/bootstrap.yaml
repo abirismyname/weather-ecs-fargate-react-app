@@ -228,7 +228,7 @@ Resources:
     Properties:
       ContainerDefinitions: 
         - Essential: true
-          Image: nginx
+          Image: amazon/amazon-ecs-sample # placeholder container
           # Image: !Sub
           #   - '${RepoUri}:latest'
           #   - RepoUri: !GetAtt ECRRepository.RepositoryUri
