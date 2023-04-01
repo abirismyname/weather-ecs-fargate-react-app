@@ -2,9 +2,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Bootstrap OIDC, VPC and clutser infrastructure
 Parameters:
-  ECRRepositoryName:
-    Type: String
-    Description: Name of the ECR repository
   ECSClusterName:
     Type: String
     Description: Name of the ECS cluster
@@ -16,14 +13,6 @@ Parameters:
     Description: VPCStackName - output value from the bootstrap stack 
 
 Resources:
-  ECRRepository:
-    Type: AWS::ECR::Repository
-    Properties: 
-      EncryptionConfiguration: 
-        EncryptionType: AES256
-      ImageScanningConfiguration: 
-        ScanOnPush: true
-      RepositoryName: !Ref ECRRepositoryName
 
   PublicLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -174,7 +163,7 @@ Resources:
               awslogs-group: !Sub "/ecs/${AppName}-task-definition-family"
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
-          Name: !Ref ECRRepositoryName
+          Name: !Ref AppName
           PortMappings: 
             - ContainerPort: 80
               HostPort: 80
@@ -247,10 +236,6 @@ Resources:
                 !Sub "${VPCStackName}-PublicSubnet3ID"
 
 Outputs:
-  ECRRepository:
-    Description: "ECR Repository Name"
-    Value: !Ref ECRRepository
-
   ECSCluster:
     Description: "ECR Cluster Name"
     Value: !Ref ECSCluster

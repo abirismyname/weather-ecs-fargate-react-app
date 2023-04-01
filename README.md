@@ -32,7 +32,8 @@ Secrets:
 * `ROLE_TO_ASSUME` = the output value of `RoleGithubActionsARN` from CloudFormation output
 
 Vars: 
-* `AWS_REGION` = use `us-east-1`
-* `ECR_REPO_NAME` =  the output value of `ECRRepository` from CloudFormation output
-* `ECS_CLUSTER` = the output value of `ECSCluster` from CloudFormation output
-* `ECS_SERVICE` = the output value of `ECSService` from CloudFormation output
+* `AWS_REGION` = the output value of 'AWSRegion' from CloudFormation output
+* `ECR_REPO_NAME` =  the output value of `ECRRepositoryName` from CloudFormation output
+* `VPC_STACK_NAME` =  the output value of `VPCStackName` from CloudFormation output
+* `ECS_CLUSTER_NANE` =  name of ECS cluster to be created
+* `APP_NAME` = name of the application shown in ECS
