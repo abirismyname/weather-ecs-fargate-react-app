@@ -33,6 +33,9 @@ Parameters:
   ECSClusterName:
     Type: String
     Description: Name of the ECS cluster
+  AppName:
+    Type: String
+    Description: Name of the application
 
 Conditions:
   CreateProvider: !Equals ["no", !Ref UseExistingProvider]
@@ -67,7 +70,7 @@ Resources:
                 - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
             Condition:
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${RepositoryName}:*
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${RepositoryName}:*:${BranchName}
       ManagedPolicyArns:
         ## edit the managed policy to give least privileges
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
@@ -124,7 +127,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       TargetType: ip
-      Name: !Ref ECRRepositoryName
+      Name: !Ref AppName
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
@@ -233,9 +236,7 @@ Resources:
             LogDriver: awslogs
             Options: 
               awslogs-create-group: true
-              awslogs-group: !Sub
-                - "/ecs/${AppName}-task-definition-family"
-                - AppName: !Ref ECRRepositoryName
+              awslogs-group: !Sub "/ecs/${AppName}-task-definition-family"
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Name: !Ref ECRRepositoryName
@@ -243,9 +244,7 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
               Protocol: "tcp"
-      Family: !Sub
-        - "${AppName}-task-definition-family"
-        - AppName: !Ref ECRRepositoryName
+      Family: !Sub "${AppName}-task-definition-family"
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       NetworkMode: "awsvpc"
       RequiresCompatibilities: 
@@ -263,11 +262,6 @@ Resources:
               Service: [ecs-tasks.amazonaws.com]
             Action: ['sts:AssumeRole']
       MaxSessionDuration: 3600
-      # ManagedPolicyArns: 
-      #   - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
-      #   - "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-      #   - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-      #   - "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
       Policies:
         - PolicyName: AmazonECSTaskExecutionRolePolicy
           PolicyDocument:
@@ -287,13 +281,11 @@ Resources:
   ECSService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub
-        - "${AppName}-service-lb"
-        - AppName: !Ref ECRRepositoryName
+      ServiceName: !Sub "${AppName}-service"
       Cluster: !GetAtt ECSCluster.Arn
       LoadBalancers: 
         - TargetGroupArn: !Ref LoadBalancerTargetGroup
-          ContainerName: !Ref ECRRepositoryName
+          ContainerName: !Ref AppName
           ContainerPort: 80
       LaunchType: FARGATE
       DesiredCount: 1
