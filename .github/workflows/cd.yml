@@ -21,6 +21,7 @@ name: cd
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
     outputs:
       app_url: ${{ steps.set_app_url.outputs.app_url }}
       app_ip:  ${{ steps.set_app_ip.outputs.app_ip }}

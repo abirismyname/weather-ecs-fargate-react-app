@@ -26,7 +26,10 @@ Parameters:
   ECRRepositoryName:
     Type: String
     Description: Name of the ECR repository
-
+  AvailabilityZones:
+    Description:
+      List of Availability Zones to use for the subnets in the VPC. Three Availability Zones are used for this deployment, and the logical order of your selections is preserved.
+    Type: List<AWS::EC2::AvailabilityZone::Name>
 Conditions:
   CreateProvider: !Equals ["no", !Ref UseExistingProvider]
 
@@ -73,6 +76,21 @@ Resources:
       ImageScanningConfiguration: 
         ScanOnPush: true
       RepositoryName: !Ref ECRRepositoryName
+
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: 'https://aws-quickstart.s3.amazonaws.com/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
+      Parameters:
+        AvailabilityZones: !Join [",", !Ref AvailabilityZones]
+        NumberOfAZs: 3
+        VPCCIDR: 10.0.0.0/16
+        PrivateSubnet1ACIDR: 10.0.0.0/19
+        PrivateSubnet2ACIDR: 10.0.32.0/19
+        PrivateSubnet3ACIDR:  10.0.64.0/19
+        PublicSubnet1CIDR: 10.0.128.0/20
+        PublicSubnet2CIDR: 10.0.144.0/20
+        PublicSubnet3CIDR: 10.0.160.0/20
 
 Outputs:
   IdpGitHubOidc:
