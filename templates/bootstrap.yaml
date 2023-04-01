@@ -23,6 +23,9 @@ Parameters:
     AllowedValues:
       - "yes"
       - "no"
+  ECRRepositoryName:
+    Type: String
+    Description: Name of the ECR repository
 
 Conditions:
   CreateProvider: !Equals ["no", !Ref UseExistingProvider]
@@ -62,6 +65,15 @@ Resources:
         ## edit the managed policy to give least privileges
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties: 
+      EncryptionConfiguration: 
+        EncryptionType: AES256
+      ImageScanningConfiguration: 
+        ScanOnPush: true
+      RepositoryName: !Ref ECRRepositoryName
+
 Outputs:
   IdpGitHubOidc:
     Condition: CreateProvider
@@ -71,3 +83,7 @@ Outputs:
   RoleGithubActionsARN:
     Description: "CICD Role for GitHub Actions"
     Value: !GetAtt RoleGithubActions.Arn
+
+  ECRRepository:
+    Description: "ECR Repository Name"
+    Value: !Ref Repository
