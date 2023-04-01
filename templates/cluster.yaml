@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Bootstrap OIDC, VPC and clutser infrastructure
+Description: ECS cluster infrastructure
 Parameters:
   ECSClusterName:
     Type: String
@@ -204,6 +204,8 @@ Resources:
 
   ECSService:
     Type: AWS::ECS::Service
+    DependsOn: 
+      - PublicLoadBalancer
     Properties:
       ServiceName: !Sub "${AppName}-service"
       Cluster: !GetAtt ECSCluster.Arn
