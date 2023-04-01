@@ -30,6 +30,10 @@ Parameters:
     Description:
       List of Availability Zones to use for the subnets in the VPC. Three Availability Zones are used for this deployment, and the logical order of your selections is preserved.
     Type: List<AWS::EC2::AvailabilityZone::Name>
+  ECSClusterName:
+    Type: String
+    Description: Name of the ECS cluster
+
 Conditions:
   CreateProvider: !Equals ["no", !Ref UseExistingProvider]
 
@@ -63,12 +67,12 @@ Resources:
                 - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
             Condition:
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${RepositoryName}:ref:refs/heads/${BranchName}
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${RepositoryName}:*
       ManagedPolicyArns:
         ## edit the managed policy to give least privileges
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
-  Repository:
+  ECRRepository:
     Type: AWS::ECR::Repository
     Properties: 
       EncryptionConfiguration: 
@@ -92,6 +96,226 @@ Resources:
         PublicSubnet2CIDR: 10.0.144.0/20
         PublicSubnet3CIDR: 10.0.160.0/20
 
+  PublicLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the public facing load balancer
+      VpcId: !GetAtt VPCStack.Outputs.VPCID
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+        - !GetAtt VPCStack.Outputs.PublicSubnet1ID
+        - !GetAtt VPCStack.Outputs.PublicSubnet2ID
+        - !GetAtt VPCStack.Outputs.PublicSubnet3ID
+      SecurityGroups: [!Ref 'PublicLoadBalancerSecurityGroup']
+
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/"
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      TargetType: ip
+      Name: !Ref ECRRepositoryName
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId: !GetAtt VPCStack.Outputs.VPCID
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref LoadBalancerTargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref PublicLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref LoadBalancerTargetGroup
+          Type: forward
+      Conditions:
+        - Field: path-pattern
+          Values: 
+            - "/"
+      ListenerArn: !Ref LoadBalancerListener
+      Priority: 1
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the ECS containers
+      VpcId: !GetAtt VPCStack.Outputs.VPCID
+
+  ECSSecurityGroupIngressFromPublicALB:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress from the public ALB
+      GroupId: !Ref ECSSecurityGroup
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref PublicLoadBalancerSecurityGroup
+
+  ECSSecurityGroupIngressFromSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress from other containers in the same security group
+      GroupId: !Ref ECSSecurityGroup
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref ECSSecurityGroup
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Rules which allow ECS to attach network interfaces to instances
+                  # on your behalf in order for awsvpc networking mode to work right
+                  - 'ec2:AttachNetworkInterface'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:CreateNetworkInterfacePermission'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DeleteNetworkInterfacePermission'
+                  - 'ec2:Describe*'
+                  - 'ec2:DetachNetworkInterface'
+                  # Rules which allow ECS to update load balancers on your behalf
+                  # with the information sabout how to send traffic to your containers
+                  - 'elasticloadbalancing:DeregisterInstancesFromLoadBalancer'
+                  - 'elasticloadbalancing:DeregisterTargets'
+                  - 'elasticloadbalancing:Describe*'
+                  - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
+                  - 'elasticloadbalancing:RegisterTargets'
+                Resource: '*'
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ECSClusterName
+      CapacityProviders: 
+        - FARGATE
+        - FARGATE_SPOT
+      ClusterSettings: 
+        - Name: containerInsights
+          Value: enabled
+
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions: 
+        - Essential: true
+          Image: nginx
+          # Image: !Sub
+          #   - '${RepoUri}:latest'
+          #   - RepoUri: !GetAtt ECRRepository.RepositoryUri
+          LogConfiguration: 
+            LogDriver: awslogs
+            Options: 
+              awslogs-create-group: true
+              awslogs-group: !Sub
+                - "/ecs/${AppName}-task-definition-family"
+                - AppName: !Ref ECRRepositoryName
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Name: !Ref ECRRepositoryName
+          PortMappings: 
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: "tcp"
+      Family: !Sub
+        - "${AppName}-task-definition-family"
+        - AppName: !Ref ECRRepositoryName
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities: 
+        - FARGATE
+      Cpu: 1024
+      Memory: 3072
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      MaxSessionDuration: 3600
+      # ManagedPolicyArns: 
+      #   - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+      #   - "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+      #   - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      #   - "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                # Allow the ECS Tasks to download images from ECR
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+                # Allow the ECS tasks to upload logs to CloudWatch
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+
+  ECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub
+        - "${AppName}-service-lb"
+        - AppName: !Ref ECRRepositoryName
+      Cluster: !GetAtt ECSCluster.Arn
+      LoadBalancers: 
+        - TargetGroupArn: !Ref LoadBalancerTargetGroup
+          ContainerName: !Ref ECRRepositoryName
+          ContainerPort: 80
+      LaunchType: FARGATE
+      DesiredCount: 1
+      PlatformVersion: LATEST
+      TaskDefinition: !Ref ECSTaskDefinition
+      DeploymentConfiguration: 
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker: 
+          Enable: true
+          Rollback: true
+      HealthCheckGracePeriodSeconds: 0
+      NetworkConfiguration: 
+        AwsvpcConfiguration: 
+          AssignPublicIp: ENABLED
+          SecurityGroups: 
+            - !Ref ECSSecurityGroup
+          Subnets: 
+            - !GetAtt VPCStack.Outputs.PublicSubnet1ID
+            - !GetAtt VPCStack.Outputs.PublicSubnet2ID
+            - !GetAtt VPCStack.Outputs.PublicSubnet3ID
+
 Outputs:
   IdpGitHubOidc:
     Condition: CreateProvider
@@ -104,4 +328,13 @@ Outputs:
 
   ECRRepository:
     Description: "ECR Repository Name"
-    Value: !Ref Repository
+    Value: !Ref ECRRepository
+
+  ECSCluster:
+    Description: "ECR Cluster Name"
+    Value: !Ref ECSCluster
+    
+  ECSService:
+    Description: "ECR Service Name"
+    Value: !GetAtt ECSService.Name
+    
