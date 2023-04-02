@@ -9,13 +9,13 @@ on:
 
 name: ci
 
-permissions:
-  contents: read
-
 jobs:
 
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # need this for OIDC
+      contents: read
     environment: ${{ github.ref_name }}
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
