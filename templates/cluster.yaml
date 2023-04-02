@@ -18,7 +18,8 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId: Fn::ImportValue:
+      VpcId: 
+        Fn::ImportValue:
           !Sub "${VPCStackName}-VPCID"
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
