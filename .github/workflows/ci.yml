@@ -71,12 +71,14 @@ jobs:
 
       - name: Build, tag, and push image to AWS ECR
         id: build-image
+        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ vars.ECR_REPO_NAME }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          echo "List all the files that have changed: ${{ steps.detect-dockerfile-changes.outputs.all_changed_files }}"
           echo "Building image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           cd app
           docker build \
