@@ -112,4 +112,4 @@ jobs:
 
       - name: Summary
         id: summary
-        run: echo "{{ steps.image-scan.outputs.total }}" >> $GITHUB_STEP_SUMMARY
+        run: echo "${{ steps.image-scan.outputs.total }}" >> $GITHUB_STEP_SUMMARY
