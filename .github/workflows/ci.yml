@@ -114,11 +114,10 @@ jobs:
         id: summary
         run: |
           echo "## ECR Container Vulnerabilities found:" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.critical }} Critical" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.high }} High" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.medium }} Medium" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.low }} Low" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.informational }} Info" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.unknown }} Undefined" >> $GITHUB_STEP_SUMMARY
-          echo "=================" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ steps.image-scan.outputs.total }} Total" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.critical }} Critical" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.high }} High" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.medium }} Medium" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.low }} Low" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.informational }} Info" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.undefined }} Undefined" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.image-scan.outputs.total }} Total" >> $GITHUB_STEP_SUMMARY
