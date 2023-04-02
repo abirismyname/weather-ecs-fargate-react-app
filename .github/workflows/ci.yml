@@ -91,6 +91,7 @@ jobs:
 
       - name: Set image tag output
         id: set-image-tag
+        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         env:
           IMAGE_TAG: ${{ github.sha }}        
         run: |
@@ -99,6 +100,7 @@ jobs:
 
       - name: ECR image scan
         id: image-scan
+        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         uses: alexjurkiewicz/ecr-scan-image@v1.7.1
         with:
           repository: ${{ vars.ECR_REPO_NAME }}
@@ -106,5 +108,6 @@ jobs:
       
       # Access scan results in later steps
       - name: ECR scan results
+        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         id: ecr-scan-results
         run: echo "${{ steps.image-scan.outputs.total }} total vulnerabilities."
