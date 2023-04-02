@@ -198,7 +198,8 @@ Resources:
                 - 'ecr:GetDownloadUrlForLayer'
                 - 'ecr:BatchGetImage'
                 # Allow the ECS tasks to upload logs to CloudWatch
-                - 'logs:CreateLogStream'
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'                
                 - 'logs:PutLogEvents'
               Resource: '*'
 
