@@ -87,13 +87,14 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}        
         run: |
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: ECR image scan
         id: image-scan
         uses: alexjurkiewicz/ecr-scan-image@v1.7.1
         with:
-          repository: ${{ vars.ECR_REPOSITORY }}
-          tag: ${{ github.sha }}
+          repository: ${{ vars.ECR_REPO_NAME }}
+          tag: ${{ env.IMAGE_TAG }}
       
       # Access scan results in later steps
       - name: ECR scan results
