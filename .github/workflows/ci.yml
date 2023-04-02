@@ -86,28 +86,30 @@ jobs:
               -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
               -t $ECR_REPOSITORY:$IMAGE_TAG \
               -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG          
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "Pushed image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Set image tag output
-        id: set-image-tag
+      - name: Set new image tag output
+        id: set-image-tag-new
         if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         env:
-          IMAGE_TAG: ${{ github.sha }}        
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: ECR image scan
         id: image-scan
-        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
+        #if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         uses: alexjurkiewicz/ecr-scan-image@v1.7.1
         with:
           repository: ${{ vars.ECR_REPO_NAME }}
-          tag: ${{ env.IMAGE_TAG }}
+          tag: latest
       
       # Access scan results in later steps
       - name: ECR scan results
-        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
+        #if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
         id: ecr-scan-results
         run: echo "${{ steps.image-scan.outputs.total }} total vulnerabilities."
