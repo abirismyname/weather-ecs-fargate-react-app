@@ -18,8 +18,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId: 
-        Fn::ImportValue:
+      VpcId: Fn::ImportValue:
           !Sub "${VPCStackName}-VPCID"
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
@@ -153,9 +152,6 @@ Resources:
       ContainerDefinitions: 
         - Essential: true
           Image: amazon/amazon-ecs-sample # placeholder container image
-          # Image: !Sub
-          #   - '${RepoUri}:latest'
-          #   - RepoUri: !GetAtt ECRRepository.RepositoryUri
           LogConfiguration: 
             LogDriver: awslogs
             Options: 
