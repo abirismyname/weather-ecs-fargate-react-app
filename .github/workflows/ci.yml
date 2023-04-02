@@ -108,3 +108,6 @@ jobs:
         with:
           repository: ${{ vars.ECR_REPO_NAME }}
           tag: latest
+
+      - name: Summary
+          run: echo "{{ steps.image-scan.outputs.total }}" >> $GITHUB_STEP_SUMMARY
