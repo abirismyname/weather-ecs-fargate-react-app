@@ -1,6 +1,5 @@
-FROM node:17-alpine as builder
+FROM node:17
 
-RUN apk update && apk upgrade
 WORKDIR /home/node/app
 
 COPY package.json yarn.lock ./
