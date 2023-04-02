@@ -46,7 +46,7 @@ jobs:
         uses: stelligent/cfn_nag@master
         with:
           input_path: templates
-          output_path: cfn_nag.sarif
+          #output_path: cfn_nag.sarif
 
       # - uses: github/codeql-action/upload-sarif@v2
       #   with:
