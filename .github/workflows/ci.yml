@@ -73,11 +73,11 @@ jobs:
 
       - name: Run step if any file(s) in the docs folder change
         run: |
-          echo "List all the files that have changed: ${{ steps.detect-dockerfile-changes.outputs.all_changed_files }}"
+          echo "List all the files that have changed: ${{ steps.detect-dockerfile-changes.outputs.all_modified_files }}"
  
       - name: Build, tag, and push image to AWS ECR
         id: build-image
-        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
+        if: steps.detect-dockerfile-changes.outputs.any_modified == 'true'
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -99,7 +99,7 @@ jobs:
 
       - name: Set new image tag output
         id: set-image-tag-new
-        if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
+        if: steps.detect-dockerfile-changes.outputs.any_modified == 'true'
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |

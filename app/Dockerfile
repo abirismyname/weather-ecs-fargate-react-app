@@ -12,6 +12,3 @@ COPY index.html  vite.config.ts ./
 COPY src ./src
 
 RUN yarn build
-
-FROM nginx:alpine
-COPY --from=builder /home/node/app/dist /usr/share/nginx/html
