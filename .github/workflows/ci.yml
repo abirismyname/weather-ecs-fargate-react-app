@@ -10,13 +10,12 @@ on:
 name: ci
 
 jobs:
-
   build-and-test:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # need this for OIDC
       contents: read
-    environment: ${{ github.ref_name }}
+    environment: ${{ github.ref_name }} # need this to fetch variables and secrets
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
     steps:
@@ -31,18 +30,19 @@ jobs:
           role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}         
 
-      # Add steps here like linting, testing, minification, etc.
+      # cloudformation linting
       - name: Cfn Lint
         id: cfn-lint
         uses: scottbrenner/cfn-lint-action@v2
 
-      - name: Print the Cloud Formation Linter Version & run Linter.
+      - name: Run Cfn Lint
         id: cfn-lint-run
         run: |
           shopt -s globstar # enable globbing
           cfn-lint --version
           cfn-lint -t ./templates/*.yaml
 
+      # cloudformation static analysis
       - name: Cfn Nag
         id: cfn-nag
         uses: stelligent/cfn_nag@master
@@ -71,10 +71,6 @@ jobs:
         with:
           files: app/**
 
-      - name: Run step if any file(s) in the docs folder change
-        run: |
-          echo "List all the files that have changed: ${{ steps.detect-dockerfile-changes.outputs.all_modified_files }}"
- 
       - name: Build, tag, and push image to AWS ECR
         id: build-image
         if: steps.detect-dockerfile-changes.outputs.any_modified == 'true'
