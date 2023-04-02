@@ -63,6 +63,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Detect Dockerfile changes
+        id: detect-dockerfile-changes
+        uses: tj-actions/changed-files@v35
+        with:
+          files: app/*.*
+
       - name: Build, tag, and push image to AWS ECR
         id: build-image
         env:
