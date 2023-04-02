@@ -24,6 +24,9 @@ Resources:
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: -1
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
 
   PublicLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -85,6 +88,9 @@ Resources:
       VpcId: 
         Fn::ImportValue:
           !Sub "${VPCStackName}-VPCID"
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
 
   ECSSecurityGroupIngressFromPublicALB:
     Type: AWS::EC2::SecurityGroupIngress
