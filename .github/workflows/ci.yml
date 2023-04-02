@@ -67,8 +67,12 @@ jobs:
         id: detect-dockerfile-changes
         uses: tj-actions/changed-files@v35
         with:
-          files: app/*.*
+          files: app/**
 
+      - name: Run step if any file(s) in the docs folder change
+        run: |
+          echo "List all the files that have changed: ${{ steps.detect-dockerfile-changes.outputs.all_changed_files }}"
+ 
       - name: Build, tag, and push image to AWS ECR
         id: build-image
         if: steps.detect-dockerfile-changes.outputs.any_changed == 'true'
