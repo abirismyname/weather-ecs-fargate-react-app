@@ -112,8 +112,3 @@ jobs:
         with:
           repository: ${{ vars.ECR_REPO_NAME }}
           tag: latest
-      
-      # Access scan results in later steps
-      - name: ECR scan results
-        id: ecr-scan-results
-        run: echo "${{ steps.image-scan.outputs.total }} total vulnerabilities."
