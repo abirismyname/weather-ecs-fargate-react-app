@@ -35,10 +35,6 @@ jobs:
           role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
       - name: Deploy ECS Cluster
         id: deploy-ecs-stack
         uses: aws-actions/aws-cloudformation-github-deploy@master
@@ -50,6 +46,18 @@ jobs:
             ECSClusterName=${{ vars.ECS_CLUSTER_NAME }},
             AppName=${{ vars.APP_NAME }},
             VPCStackName=${{ vars.VPC_STACK_NAME }}
+
+      - name: Get ECS env vars
+        id: get_ecs_ven_vars
+        run: |
+          ECS_CLUSTER=$(aws cloudformation describe-stacks --stack-name cluster --region ${{ vars.AWS_REGION }} | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="ECSCluster") | .OutputValue')
+          ECS_SERVICE=$(aws cloudformation describe-stacks --stack-name cluster --region ${{ vars.AWS_REGION }} | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="ECSService") | .OutputValue')
+          echo "ECS_CLUSTER=$ECS_CLUSTER" >> $GITHUB_ENV
+          echo "ECS_SERVICE=$ECS_SERVICE" >> $GITHUB_ENV
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Download task definition
         run: |
