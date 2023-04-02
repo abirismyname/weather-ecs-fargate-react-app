@@ -96,6 +96,6 @@ jobs:
           tag: ${{ github.sha }}
       
       # Access scan results in later steps
-      - name ECR scan results
+      - name: ECR scan results
         id: ecr-scan-results
         run: echo "${{ steps.image-scan.outputs.total }} total vulnerabilities."
