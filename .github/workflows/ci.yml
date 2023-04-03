@@ -102,6 +102,14 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
+      - name: Set new image tag as latest
+        id: set-image-tag-latest
+        if: steps.detect-dockerfile-changes.outputs.any_modified == 'false'
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+
       - name: ECR image scan
         id: image-scan
         uses: alexjurkiewicz/ecr-scan-image@v1.7.1
