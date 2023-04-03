@@ -122,4 +122,4 @@ jobs:
           echo "${{ steps.image-scan.outputs.total }} Total" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
           echo "## Cfn_Nag Summary:" >> $GITHUB_STEP_SUMMARY
-          echo "cat cfn_nag | grep 'Failures\|templates'" >> $GITHUB_STEP_SUMMARY
+          cat cfn_nag | grep 'Failures\|templates' >> $GITHUB_STEP_SUMMARY
