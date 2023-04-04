@@ -16,8 +16,8 @@ jobs:
       id-token: write # need this for OIDC
       contents: read
     environment: ${{ github.ref_name }} # need this to fetch variables and secrets
-    #outputs:
-      #image-tag: ${{ steps.set-image-tag-new.outputs.IMAGE_TAG }} #default
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }} 
 
     steps:
       - name: Checkout Code
@@ -94,24 +94,11 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "Pushed image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Set new image tag output
-        id: set-image-tag-new
-        if: steps.detect-dockerfile-changes.outputs.any_modified == 'true'
-        env:
-          IMAGE_TAG: ${{ github.sha }}
+      - name: Set new image tag
+        id: set-image-tag
         run: |
-          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-      - name: Set new image tag as latest
-        id: set-image-tag-latest
-        if: steps.detect-dockerfile-changes.outputs.any_modified == 'false'
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-
+          [[ -z $IMAGE_TAG ]] && echo "IMAGE_TAG=latest" >> $GITHUB_OUTPUT && echo "IMAGE_TAG=latest" >> $GITHUB_ENV || echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT && echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV 
+        
       - name: ECR image scan
         id: image-scan
         uses: alexjurkiewicz/ecr-scan-image@v1.7.1
