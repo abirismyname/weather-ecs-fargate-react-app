@@ -120,3 +120,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
           echo "## Cfn_Nag Summary:" >> $GITHUB_STEP_SUMMARY
           cat cfn_nag.out | grep 'Failures\|templates' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
+          echo "## ECR Container Image:" >> $GITHUB_STEP_SUMMARY
+          echo "image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
