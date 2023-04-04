@@ -16,8 +16,9 @@ jobs:
       id-token: write # need this for OIDC
       contents: read
     environment: ${{ github.ref_name }} # need this to fetch variables and secrets
-    outputs:
-      image-tag: ${{ steps.set-image-tag-new.outputs.IMAGE_TAG }} #default
+    #outputs:
+      #image-tag: ${{ steps.set-image-tag-new.outputs.IMAGE_TAG }} #default
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -99,9 +100,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          echo "::set-output name=image-tag::$IMAGE_TAG"
 
       - name: Set new image tag as latest
         id: set-image-tag-latest
@@ -109,8 +109,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-          echo "::set-output name=image-tag::latest"
 
       - name: ECR image scan
         id: image-scan
